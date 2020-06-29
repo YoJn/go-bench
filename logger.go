@@ -7,3 +7,6 @@ import (
 
 var DefaultWriter io.Writer = os.Stdout
 
+func LoggerWithWriter()  {
+	
+}
