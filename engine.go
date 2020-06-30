@@ -1,6 +1,7 @@
 package go_bench
 
 import (
+	"context"
 	"time"
 )
 
@@ -10,10 +11,16 @@ type BenchEngine struct {
 	index int
 	// 函数链
 	methods BenchChain
-	// 设置过期时间
-	expireTime *time.Duration
+	// 设置单个过期时间
+	workExpireTime *time.Duration
+	// 设置Engine过期时间
+	engineExpireTime *time.Duration
 	// 总次数
 	totalCount int32
+	// 工人(协程)数量
+	workerNum int32
+	// 工作函数
+	work func(ctx context.Context)
 }
 
 /// Use
@@ -21,26 +28,48 @@ func (engine *BenchEngine) Use(middleware ...BenchHandle){
 	engine.methods =append(engine.methods,middleware...)
 }
 
-/// SetExpireTime
-func  (engine *BenchEngine) SetExpireTime(duration time.Duration) *BenchEngine{
-	engine.expireTime = &duration
+/// SetWorkExpireTime
+func (engine *BenchEngine) SetWorkExpireTime(duration time.Duration) *BenchEngine{
+	engine.workExpireTime = &duration
 	return engine
 }
 
+/// SetWorkExpireTime
+func (engine *BenchEngine) SetEngineExpireTime(duration time.Duration) *BenchEngine{
+	engine.engineExpireTime = &duration
+	return engine
+}
+
+/// Add
+func (engine *BenchEngine) Add(work func(ctx context.Context)) *BenchEngine{
+	engine.work = work
+	return engine
+}
+
+/// Add
+func (engine *BenchEngine) Run() *BenchEngine{
+	if engine.work == nil{
+		panic("engine worker can not be nil")
+	}
+}
+
 /// New
-func New() *BenchEngine{
+func New(totalCount,workerNum int32) *BenchEngine{
 	return &BenchEngine{
 		index:      -1,
 		methods:    BenchChain{},
-		expireTime: nil,
+		workExpireTime: nil,
+		engineExpireTime: nil,
+		totalCount:totalCount,
+		workerNum:workerNum,
 	}
 }
 
 /// Default
 func Default() *BenchEngine{
-	engine := New()
+	engine := New(defaultEngineCount,defaultWorkerNum)
 	//todo log & recover
-	engine.Use()
+	engine.Use(DefaultLogger())
 	return engine
 }
 
